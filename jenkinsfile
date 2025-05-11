@@ -1,47 +1,25 @@
-pipeline {
-    agent any
-   
-    enviroment {
-        DOCKER_IMAGE - 'dcproject1:latest'
-        DOCKER_HUB_REPO - 'gimi89/docker-image'
+node {
+    def mvnHome
+    stage('Preparation') { // for display purposes
+        // Get some code from a GitHub repository
+        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+        // Get the Maven tool.
+        // ** NOTE: This 'M3' Maven tool must be configured
+        // **       in the global configuration.
+        mvnHome = tool 'M3'
     }
-   
-    stages {
-        stage('checkout') {
-           steps {
-               echo 'checking out code from Github...'
-               git 'https://github.com/jimmysaqipi/first-pro.git'
-           }
-        }
-        stage('Build Docker Image') {
-            steps{
-                echo 'Building Docker Image...'
-                bat 'docker build -t $DOCKE_IMAGE$'
+    stage('Build') {
+        // Run the maven build
+        withEnv(["MVN_HOME=$mvnHome"]) {
+            if (isUnix()) {
+                sh '"$MVN_HOME/bin/mvn" -Dmaven.test.failure.ignore clean package'
+            } else {
+                bat(/"%MVN_HOME%\bin\mvn" -Dmaven.test.failure.ignore clean package/)
             }
         }
-       
-        stage('Run Tests') {
-            steps {
-                echo 'Running tests...'
-                // e.g., bat 'npm test'
-            }
-        }
-        stage('push to Docker Hub') {
-            steps {
-                echo 'pushing Docker Image to Docker Hub...'
-                withCredentials([usernamepassword(credentialsId:'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')])
-                bat 'docker login -u $DOCKER_HUB_USERNAME$ -p $DOCKER_HUB_PASSWORD$'
-                bat 'docker tag $DOCKER_IMAGE$ $DOCKER_HUB_REPO$:$BUILD_NUMBER$'
-                bat 'docker push $DOCKER_HUB_REPO$:$BUILD_NUMBER$'
-            }
-        }
-   
     }
-    post {
-        success {
-            echo 'pipeline completed successfully.'
-        }
-        failure {
-            echo 'pipeline failed'
-        }
+    stage('Results') {
+        junit '**/target/surefire-reports/TEST-*.xml'
+        archiveArtifacts 'target/*.jar'
     }
+}
