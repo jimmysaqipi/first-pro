@@ -1,25 +1,47 @@
 pipeline {
     agent any
-
+   
+    enviroment {
+        DOCKER_IMAGE - 'dcproject1:latest'
+        DOCKER_HUB_REPO - 'gimi89/docker-image'
+    }
+   
     stages {
-        stage('Build') {
-            steps {
-                echo 'Building...'
-                // Example: sh 'npm install' or docker build
+        stage('checkout') {
+           steps {
+               echo 'checking out code from Github...'
+               git 'https://github.com/jimmysaqipi/first-pro.git'
+           }
+        }
+        stage('Build Docker Image') {
+            steps{
+                echo 'Building Docker Image...'
+                bat 'docker build -t $DOCKE_IMAGE$'
             }
         }
-
-        stage('Test') {
+       
+        stage('Run Tests') {
             steps {
-                echo 'Testing...'
-                // Example: sh 'npm test'
+                echo 'Running tests...'
+                // e.g., bat 'npm test'
             }
         }
-
-        stage('Deploy') {
+        stage('push to Docker Hub') {
             steps {
-                echo 'Deploying...'
+                echo 'pushing Docker Image to Docker Hub...'
+                withCredentials([usernamepassword(credentialsId:'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')])
+                bat 'docker login -u $DOCKER_HUB_USERNAME$ -p $DOCKER_HUB_PASSWORD$'
+                bat 'docker tag $DOCKER_IMAGE$ $DOCKER_HUB_REPO$:$BUILD_NUMBER$'
+                bat 'docker push $DOCKER_HUB_REPO$:$BUILD_NUMBER$'
             }
+        }
+   
+    }
+    post {
+        success {
+            echo 'pipeline completed successfully.'
+        }
+        failure {
+            echo 'pipeline failed'
         }
     }
-}
