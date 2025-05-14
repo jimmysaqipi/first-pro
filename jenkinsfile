@@ -1,51 +1,34 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_IMAGE = 'my-app:latest'
-        DOCKER_HUB_REPO = 'gimi89/gimi89'
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out code from GitHub...'
                 git 'https://github.com/jimmysaqipi/first-pro.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build') {
             steps {
-                echo 'Building Docker Image...'
-                bat "docker build -t ${DOCKER_IMAGE} ."
+                echo 'Po ndërtohet aplikacioni...'
+                // shembull për Node.js
+                sh 'npm install'
             }
         }
 
-        stage('Run Tests') {
+        stage('Test') {
             steps {
-                echo 'Running tests...'
-                // shembull: bat 'npm test'
+                echo 'Po ekzekutohen testet...'
+                sh 'npm test'
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Deploy') {
             steps {
-                echo 'Pushing Docker Image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                    bat "docker login -u %DOCKER_HUB_USERNAME% -p %DOCKER_HUB_PASSWORD%"
-                    bat "docker tag ${DOCKER_IMAGE} ${DOCKER_HUB_REPO}:${BUILD_NUMBER}"
-                    bat "docker push ${DOCKER_HUB_REPO}:${BUILD_NUMBER}"
-                }
-            }
-        }
-    }
+                echo 'Po bëhet deploy...'
+            
 
-    post {
-        success {
-            echo 'Pipeline completed successfully.'
-        }
-        failure {
-            echo 'Pipeline failed.'
+            }
         }
     }
 }
