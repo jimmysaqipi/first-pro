@@ -1,19 +1,38 @@
 const express = require('express');
 const mongoose = require('mongoose');
+
 const app = express();
+const PORT = 8000;
+
 app.use(express.json());
-mongoose.connect('mongodb://localhost:27017/testdb', {
-  useNewUrlparser: true,
-  useUnifiedTopology: true,
+
+// Use the container name "mongo" for MongoDB connection in Docker
+mongoose.connect('mongodb://mongo:27017/mydb',
+     {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
 })
-.then (() =>console.log('U lidh me MongoDB!'))
-.catch(err => console.log(err))
+.then(() => console.log('MongoDB connected'))
+.catch((err) => console.error('MongoDB connection error:', err))
 
-app.get('/', (req, res)=>{
-  res.send('Hello from Dockerfile');
+const User = mongoose.model('User', new mongoose.Schema({
+    name: String,
+    email: String
+
+}));
+
+app.get('/', async (req, res) => {
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (err){
+        console.error('Error getting users:', err);
+        res.status(500).send('Server Error');
+    }
+    const users = User.find();
+    res.send('hello from mongodb');
 });
-const PORT = 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}/`);
+app.listen(8000, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
